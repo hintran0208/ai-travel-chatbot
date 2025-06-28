@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TravelBot - Your AI Travel Assistant</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .chat-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 800px;
+        height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .chat-header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 20px 25px;
+        text-align: center;
+        border-radius: 20px 20px 0 0;
+      }
+
+      .chat-header h1 {
+        font-size: 28px;
+        margin-bottom: 5px;
+        font-weight: 600;
+      }
+
+      .chat-header p {
+        font-size: 16px;
+        opacity: 0.9;
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .message {
+        max-width: 80%;
+        padding: 15px 18px;
+        border-radius: 18px;
+        word-wrap: break-word;
+        animation: slideIn 0.3s ease;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .message:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .message.selected {
+        border: 2px solid #4facfe;
+        box-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+        transform: scale(1.02);
+      }
+
+      .user-message.selected {
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      }
+
+      .export-controls {
+        background: white;
+        padding: 15px 20px;
+        border-top: 1px solid #e2e8f0;
+        border-radius: 0;
+        display: none;
+        position: relative;
+      }
+
+      .export-controls.show {
+        display: block;
+      }
+
+      .export-buttons {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .export-btn {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: transform 0.2s ease;
+      }
+
+      .export-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .export-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .selected-count {
+        font-size: 14px;
+        color: #4facfe;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .user-message {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        align-self: flex-end;
+        margin-left: auto;
+      }
+
+      .bot-message {
+        background: white;
+        color: #333;
+        align-self: flex-start;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Styles for headers within messages */
+      .message h1 {
+        font-size: 1.5em;
+        margin: 0.5em 0 0.3em 0;
+        color: #2d3748;
+        font-weight: 600;
+      }
+
+      .message h2 {
+        font-size: 1.3em;
+        margin: 0.4em 0 0.25em 0;
+        color: #2d3748;
+        font-weight: 600;
+      }
+
+      .message h3 {
+        font-size: 1.1em;
+        margin: 0.3em 0 0.2em 0;
+        color: #2d3748;
+        font-weight: 600;
+      }
+
+      .message h4 {
+        font-size: 1em;
+        margin: 0.25em 0 0.15em 0;
+        color: #2d3748;
+        font-weight: 600;
+      }
+
+      .user-message h1,
+      .user-message h2,
+      .user-message h3,
+      .user-message h4 {
+        color: white;
+      }
+
+      .message code {
+        background: #f7fafc;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+      }
+
+      .user-message code {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .typing-indicator {
+        display: none;
+        background: white;
+        color: #666;
+        align-self: flex-start;
+        border: 1px solid #e2e8f0;
+        font-style: italic;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      .function-call-indicator {
+        background: #e6f3ff;
+        color: #0066cc;
+        font-size: 14px;
+        padding: 10px 15px;
+        border-radius: 15px;
+        margin: 5px 0;
+        border-left: 4px solid #0066cc;
+      }
+
+      .chat-input-container {
+        padding: 20px 25px;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        border-radius: 0 0 20px 20px;
+      }
+
+      .chat-input-form {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .chat-input {
+        flex: 1;
+        padding: 15px 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 25px;
+        font-size: 16px;
+        outline: none;
+        transition: border-color 0.3s ease;
+        resize: none;
+        min-height: 50px;
+        max-height: 120px;
+        font-family: inherit;
+      }
+
+      .chat-input:focus {
+        border-color: #4facfe;
+      }
+
+      .send-button {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+      }
+
+      .send-button:hover {
+        transform: scale(1.1);
+      }
+
+      .send-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .welcome-message {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        margin: 20px 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: -webkit-linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 15px;
+      }
+
+      .suggested-prompts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+        justify-content: center;
+      }
+
+      .prompt-button {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .prompt-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .connection-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        border-radius: 20px;
+        color: white;
+        font-size: 14px;
+        z-index: 1000;
+      }
+
+      .connected {
+        background: #10b981;
+      }
+
+      .disconnected {
+        background: #ef4444;
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        .chat-container {
+          height: 90vh;
+          border-radius: 15px;
+        }
+
+        .chat-header {
+          padding: 15px 20px;
+          border-radius: 15px 15px 0 0;
+        }
+
+        .chat-header h1 {
+          font-size: 24px;
+        }
+
+        .message {
+          max-width: 90%;
+          padding: 12px 15px;
+        }
+
+        .chat-input-container {
+          padding: 15px 20px;
+          border-radius: 0 0 15px 15px;
+        }
+
+        .suggested-prompts {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .prompt-button {
+          width: 100%;
+          max-width: 300px;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="connection-status disconnected" id="connectionStatus">🔌 Connecting...</div>
+
+    <div class="chat-container">
+      <div class="chat-header">
+        <h1>🧳 TravelBot</h1>
+        <p>Your AI-powered travel assistant for hotels, flights, weather & activities</p>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-message">
+          <h3>✈️ Welcome to TravelBot! ✈️</h3>
+          <p>
+            I'm your personal travel assistant, ready to help you plan the perfect trip! I can
+            search for hotels, find flights, check weather, suggest amazing activities, and convert
+            currencies including Vietnamese Dong (VND).
+          </p>
+
+          <div class="suggested-prompts">
+            <button
+              class="prompt-button"
+              onclick="sendSuggestedMessage('Find me a hotel in Paris for next weekend')"
+            >
+              🏨 Find hotels in Paris
+            </button>
+            <button
+              class="prompt-button"
+              onclick="sendSuggestedMessage('Search flights from New York to Tokyo departing December 15th')"
+            >
+              ✈️ Search flights to Tokyo
+            </button>
+            <button
+              class="prompt-button"
+              onclick="sendSuggestedMessage('What\'s the weather like in London next week?')"
+            >
+              🌤️ Check London weather
+            </button>
+            <button
+              class="prompt-button"
+              onclick="sendSuggestedMessage('Suggest activities in Barcelona')"
+            >
+              🎭 Barcelona activities
+            </button>
+            <button
+              class="prompt-button"
+              onclick="sendSuggestedMessage('Convert 1000 USD to Vietnamese Dong')"
+            >
+              💱 Convert USD to VND
+            </button>
+            <button
+              class="prompt-button"
+              onclick="sendSuggestedMessage('Plan a 3-day trip to Rome')"
+            >
+              📋 Plan Rome itinerary
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typingIndicator">TravelBot is thinking... 🤔</div>
+
+      <div class="export-controls" id="exportControls">
+        <div class="selected-count" id="selectedCount">0 messages selected</div>
+        <div class="export-buttons">
+          <button class="export-btn" onclick="exportSelected('excel')" id="exportExcelBtn">
+            📊 Export to Excel
+          </button>
+          <button class="export-btn" onclick="exportSelected('txt')" id="exportTxtBtn">
+            📄 Export to TXT
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-input-container">
+        <form class="chat-input-form" id="chatForm">
+          <textarea
+            class="chat-input"
+            id="messageInput"
+            placeholder="Ask me about hotels, flights, weather, or activities..."
+            rows="1"
+            required
+          ></textarea>
+          <button type="submit" class="send-button" id="sendButton">➤</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      class TravelChatbot {
+        constructor() {
+          this.conversationId = this.generateConversationId();
+          this.socket = null;
+          this.isConnected = false;
+          this.messages = []; // Store all messages for export
+
+          this.initializeElements();
+          this.setupEventListeners();
+          this.connectWebSocket();
+        }
+
+        generateConversationId() {
+          return "conv_" + Math.random().toString(36).substr(2, 9) + "_" + Date.now();
+        }
+
+        initializeElements() {
+          this.chatMessages = document.getElementById("chatMessages");
+          this.messageInput = document.getElementById("messageInput");
+          this.chatForm = document.getElementById("chatForm");
+          this.sendButton = document.getElementById("sendButton");
+          this.typingIndicator = document.getElementById("typingIndicator");
+          this.connectionStatus = document.getElementById("connectionStatus");
+          this.exportControls = document.getElementById("exportControls");
+          this.selectedCount = document.getElementById("selectedCount");
+        }
+
+        setupEventListeners() {
+          this.chatForm.addEventListener("submit", (e) => this.handleSubmit(e));
+
+          // Auto-resize textarea
+          this.messageInput.addEventListener("input", () => {
+            this.messageInput.style.height = "auto";
+            this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 120) + "px";
+          });
+
+          // Enter to send, Shift+Enter for new line
+          this.messageInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              this.chatForm.dispatchEvent(new Event("submit"));
+            }
+          });
+        }
+
+        connectWebSocket() {
+          const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+          const wsUrl = `${protocol}//${window.location.host}/ws/${this.conversationId}`;
+
+          this.socket = new WebSocket(wsUrl);
+
+          this.socket.onopen = () => {
+            this.isConnected = true;
+            this.updateConnectionStatus(true);
+            console.log("🔗 Connected to TravelBot");
+          };
+
+          this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleBotResponse(data);
+          };
+
+          this.socket.onclose = () => {
+            this.isConnected = false;
+            this.updateConnectionStatus(false);
+            console.log("🔌 Disconnected from TravelBot");
+
+            // Attempt to reconnect after 3 seconds
+            setTimeout(() => this.connectWebSocket(), 3000);
+          };
+
+          this.socket.onerror = (error) => {
+            console.error("❌ WebSocket error:", error);
+            this.isConnected = false;
+            this.updateConnectionStatus(false);
+          };
+        }
+
+        updateConnectionStatus(connected) {
+          if (connected) {
+            this.connectionStatus.textContent = "🟢 Connected";
+            this.connectionStatus.className = "connection-status connected";
+          } else {
+            this.connectionStatus.textContent = "🔴 Disconnected";
+            this.connectionStatus.className = "connection-status disconnected";
+          }
+        }
+
+        handleSubmit(e) {
+          e.preventDefault();
+
+          const message = this.messageInput.value.trim();
+          if (!message || !this.isConnected) return;
+
+          this.sendMessage(message);
+          this.messageInput.value = "";
+          this.messageInput.style.height = "auto";
+        }
+
+        sendMessage(message) {
+          // Display user message
+          this.addMessage(message, "user");
+
+          // Show typing indicator
+          this.showTypingIndicator();
+
+          // Disable send button
+          this.sendButton.disabled = true;
+
+          // Send message via WebSocket
+          if (this.socket && this.isConnected) {
+            this.socket.send(JSON.stringify({ message: message }));
+          }
+        }
+
+        handleBotResponse(data) {
+          this.hideTypingIndicator();
+          this.sendButton.disabled = false;
+
+          if (data.type === "response") {
+            // Show function calls if any
+            if (data.function_calls && data.function_calls.length > 0) {
+              data.function_calls.forEach((call) => {
+                this.addFunctionCallIndicator(call);
+              });
+            }
+
+            // Add bot response
+            this.addMessage(data.content, "bot");
+          }
+        }
+
+        addMessage(content, sender) {
+          const messageDiv = document.createElement("div");
+          messageDiv.className = `message ${sender}-message`;
+
+          // Convert markdown-like formatting to HTML
+          const formattedContent = this.formatMessage(content);
+          messageDiv.innerHTML = formattedContent;
+
+          // Store message data for export
+          const messageData = {
+            role: sender,
+            content: content,
+            timestamp: new Date().toISOString(),
+          };
+
+          // Attach message data to the message element
+          messageDiv.setAttribute("data-message", JSON.stringify(messageData));
+          messageDiv.setAttribute("data-selected", "false");
+
+          // Add click event listener for selection
+          messageDiv.addEventListener("click", () => {
+            this.toggleMessageSelection(messageDiv);
+          });
+
+          this.chatMessages.appendChild(messageDiv);
+          this.messages.push(messageData);
+          this.scrollToBottom();
+        }
+
+        addFunctionCallIndicator(functionCall) {
+          const indicatorDiv = document.createElement("div");
+          indicatorDiv.className = "function-call-indicator";
+
+          const functionName = functionCall.function;
+          const args = functionCall.arguments;
+
+          let description = "";
+          switch (functionName) {
+            case "search_hotels":
+              description = `🏨 Searching hotels in ${args.destination}...`;
+              break;
+            case "search_flights":
+              description = `✈️ Finding flights from ${args.origin} to ${args.destination}...`;
+              break;
+            case "get_weather":
+              description = `🌤️ Checking weather for ${args.city}...`;
+              break;
+            case "get_local_activities":
+              description = `🎭 Looking up activities in ${args.destination}...`;
+              break;
+            case "exchange_currency":
+              description = `💱 Converting ${args.amount} ${args.from_currency} to ${args.to_currency}...`;
+              break;
+            default:
+              description = `🔧 Calling ${functionName}...`;
+          }
+
+          indicatorDiv.textContent = description;
+          this.chatMessages.appendChild(indicatorDiv);
+          this.scrollToBottom();
+        }
+
+        formatMessage(content) {
+          // Convert markdown-like formatting to HTML
+          return content
+            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold
+            .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italic
+            .replace(/`(.*?)`/g, "<code>$1</code>") // Code
+            .replace(/^#### (.*$)/gm, "<h4>$1</h4>") // H4 Headers
+            .replace(/^### (.*$)/gm, "<h3>$1</h3>") // H3 Headers
+            .replace(/^## (.*$)/gm, "<h2>$1</h2>") // H2 Headers
+            .replace(/^# (.*$)/gm, "<h1>$1</h1>") // H1 Headers
+            .replace(/\n/g, "<br>") // Line breaks
+            .replace(/^- (.*$)/gm, "• $1"); // Bullet points
+        }
+
+        showTypingIndicator() {
+          this.typingIndicator.style.display = "block";
+          this.scrollToBottom();
+        }
+
+        hideTypingIndicator() {
+          this.typingIndicator.style.display = "none";
+        }
+
+        scrollToBottom() {
+          this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        }
+
+        toggleMessageSelection(messageElement) {
+          const isSelected = messageElement.getAttribute("data-selected") === "true";
+
+          if (isSelected) {
+            messageElement.classList.remove("selected");
+            messageElement.setAttribute("data-selected", "false");
+          } else {
+            messageElement.classList.add("selected");
+            messageElement.setAttribute("data-selected", "true");
+          }
+
+          this.updateExportControls();
+        }
+
+        updateExportControls() {
+          const selectedMessages = this.chatMessages.querySelectorAll(
+            '.message[data-selected="true"]'
+          );
+
+          if (selectedMessages.length > 0) {
+            this.exportControls.classList.add("show");
+            this.selectedCount.textContent = `${selectedMessages.length} message${
+              selectedMessages.length > 1 ? "s" : ""
+            } selected`;
+          } else {
+            this.exportControls.classList.remove("show");
+          }
+        }
+
+        getSelectedMessages() {
+          const selectedMessages = [];
+          const selectedElements = this.chatMessages.querySelectorAll(
+            '.message[data-selected="true"]'
+          );
+
+          selectedElements.forEach((messageElement) => {
+            const messageData = JSON.parse(messageElement.getAttribute("data-message"));
+            selectedMessages.push(messageData);
+          });
+
+          return selectedMessages;
+        }
+
+        async exportMessages(format) {
+          const selectedMessages = this.getSelectedMessages();
+
+          if (selectedMessages.length === 0) {
+            alert("Please select at least one message to export.");
+            return;
+          }
+
+          try {
+            const response = await fetch("/api/export", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                messages: selectedMessages,
+                format: format,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error(`Export failed: ${response.statusText}`);
+            }
+
+            // Get filename from response headers or generate default
+            const contentDisposition = response.headers.get("Content-Disposition");
+            let filename = `chat_export_${new Date()
+              .toISOString()
+              .slice(0, 19)
+              .replace(/:/g, "-")}.${format === "excel" ? "xlsx" : "txt"}`;
+
+            if (contentDisposition) {
+              const filenameMatch = contentDisposition.match(/filename=(.+)/);
+              if (filenameMatch) {
+                filename = filenameMatch[1].replace(/"/g, "");
+              }
+            }
+
+            // Create blob and download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            console.log(
+              `✅ Exported ${selectedMessages.length} messages to ${format.toUpperCase()}`
+            );
+          } catch (error) {
+            console.error("Export error:", error);
+            alert(`Failed to export messages: ${error.message}`);
+          }
+        }
+      }
+
+      // Global function for suggested prompts
+      function sendSuggestedMessage(message) {
+        if (window.chatbot) {
+          window.chatbot.sendMessage(message);
+        }
+      }
+
+      // Global function for export controls
+      function exportSelected(format) {
+        if (window.chatbot) {
+          window.chatbot.exportMessages(format);
+        }
+      }
+
+      // Initialize chatbot when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        window.chatbot = new TravelChatbot();
+      });
+    </script>
+  </body>
+</html>
